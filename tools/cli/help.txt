@@ -497,7 +497,7 @@ Options:
                   constraints.
   --deploy-polling-timeout  The number of milliseconds to wait for build/deploy
                   success or failure after a successful upload of your app's
-                  minified code, defaults to 15 minutes.
+                  minified code; defaults to 15 minutes.
 
 >>> authorized
 View or change authorized users and organizations for a site.
