@@ -78,10 +78,10 @@ function deployRpc(options) {
     throw new Error("sorry, can't combine cookie headers yet");
   }
   options.qs = Object.assign({}, options.qs,
-    {capabilities: CAPABILITIES});
+    {capabilities: CAPABILITIES.slice()});
   // If we are waiting for deploy, we let Galaxy know so it can
   // use that information to send us the right deploy message response.
-  if(options.waitForDeploy) {
+  if (options.waitForDeploy) {
     options.qs.capabilities.push('willPollVersionStatus');
   }
 
@@ -367,7 +367,7 @@ class PollingState {
     pollIntervalMs,
     maxErrors) {
       const FIFTEEN_MINUTES_MS = 15*60*1000;
-      const MAX_ERRORS = 5
+      const MAX_ERRORS = 5;
       this.initialWaitTimeMs = initialWaitTimeMs || 10*1000;
       this.pollIntervalMs = pollIntervalMs || 700;
       this.deadline = timeoutMs ? new Date(new Date().getTime() + timeoutMs) :
@@ -404,8 +404,8 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
     printDeployURL: false,
   });
 
-  //Check the details of the Version Status response and compare message to last call
-  if(versionStatusResult &&
+  // Check the details of the Version Status response and compare message to last call
+  if (versionStatusResult &&
     versionStatusResult.payload &&
     versionStatusResult.payload.message) {
       const message = versionStatusResult.payload.message;
@@ -418,12 +418,12 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
     // keep polling as per usual – this may have just been a whiff from Galaxy.
     // We do the retry here because we might hit an error if we try to parse the
     // result of the version-status call below.
-    Console.warn('Received malformed response from Galaxy',
+    Console.warn('Unexpected error from Galaxy',
       versionStatusResult.errorMessage);
     pollingState.errors++;
     if (pollingState.errors >= pollingState.maxErrors) {
-      throw new Error(versionStatusResult.errorMessage);
-    } else if(new Date() < deadline) {
+      Console.error(versionStatusResult.errorMessage);
+    } else if (new Date() < deadline) {
       sleepMs(pollIntervalMs);
       return pollForDeploy(pollingState, versionId);
     }
@@ -438,7 +438,7 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
   } else if (!finishStatus.isFinished) {
     Console.info(`Polling timed out. To check the status of your app, visit
     ${versionStatusResult.payload.galaxyUrl}. To wait longer, pass a timeout
-    in milliseconds to the '--deploy-polling-timeout' option of 'meteor deploy'`);
+    in milliseconds to the '--deploy-polling-timeout' option of 'meteor deploy'.`);
   }
   return finishStatus;
 }

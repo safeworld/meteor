@@ -1352,7 +1352,7 @@ main.registerCommand({
     // responsible for the consequences.
     'override-architecture-with-local' : { type: Boolean },
     'allow-incompatible-update': { type: Boolean },
-    'deploy-polling-timeout': {type: Number},
+    'deploy-polling-timeout': { type: Number },
     'no-wait': { type: Boolean },
   },
   allowUnrecognizedOptions: true,
@@ -1415,7 +1415,7 @@ main.registerCommand({
   };
 
   let deployPollingTimeoutMs = null;
-  if (!!options['deploy-polling-timeout']) {
+  if (options['deploy-polling-timeout']) {
     deployPollingTimeoutMs = options['deploy-polling-timeout'];
   }
 
