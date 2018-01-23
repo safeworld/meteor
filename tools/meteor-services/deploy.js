@@ -418,11 +418,11 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
     // keep polling as per usual – this may have just been a whiff from Galaxy.
     // We do the retry here because we might hit an error if we try to parse the
     // result of the version-status call below.
-    Console.warn('Unexpected error from Galaxy',
-      versionStatusResult.errorMessage);
+    Console.warn(versionStatusResult.errorMessage || 'Unexpected error from Galaxy');
     pollingState.errors++;
     if (pollingState.errors >= pollingState.maxErrors) {
       Console.error(versionStatusResult.errorMessage);
+      return 1;
     } else if (new Date() < deadline) {
       sleepMs(pollIntervalMs);
       return pollForDeploy(pollingState, versionId);
