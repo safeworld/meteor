@@ -21,7 +21,12 @@ import {
 } from './auth.js';
 import { recordPackages } from './stats.js';
 import { Console } from '../console/console.js';
-import { sleepMs } from '../utils/utils.js';
+
+function sleepForMilliseconds(millisecondsToWait) {
+  return new Promise(function(resolve) {
+    let time = setTimeout(() => resolve(null), millisecondsToWait)
+  });
+}
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -332,20 +337,13 @@ function canonicalizeSite(site) {
 
 // Executes the poll to check for deployment success and outputs proper messages
 // to user about the status of their app during the polling process
-function pollForDeploymentSuccess(versionId, deployPollTimeout, result) {
+async function pollForDeploymentSuccess(versionId, deployPollTimeout, result) {
   // Create a default polling configuration for polling for deploy / build
   // In the future, we may change this to be user-configurable or smart
   // The user can only currently configure the polling timeout via a flag
   const pollingState = new PollingState(deployPollTimeout);
-
-  const deploymentPollResult = buildmessage.enterJob({
-    title: "Waiting for deploy to succeed..."},
-    function() {
-      // Begin polling after a pause
-      sleepMs(pollingState.initialWaitTimeMs);
-      return pollForDeploy(pollingState, versionId);
-    });
-
+  await sleepForMilliseconds(pollingState.initialWaitTimeMs);
+  const deploymentPollResult = await pollForDeploy(pollingState, versionId);
   if (deploymentPollResult && deploymentPollResult.isActive) {
     return 0;
   }
@@ -386,7 +384,7 @@ class PollingState {
 // messages pertaining to the status of the version, which will then be reported
 // directly to the user. When the poll is complete, it will return an object
 // with information about the final state of the version and the app.
-function pollForDeploy(pollingState, versionId, galaxyUrl) {
+async function pollForDeploy(pollingState, versionId, galaxyUrl) {
   const {
     deadline,
     initialWaitTimeMs,
@@ -424,8 +422,8 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
       Console.error(versionStatusResult.errorMessage);
       return 1;
     } else if (new Date() < deadline) {
-      sleepMs(pollIntervalMs);
-      return pollForDeploy(pollingState, versionId);
+      await sleepForMilliseconds(pollIntervalMs);
+      return await pollForDeploy(pollingState, versionId);
     }
   }
 
@@ -433,8 +431,8 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
   // Poll again if version isn't finished and we haven't exceeded the timeout
   if(new Date() < deadline && !finishStatus.isFinished) {
     // Wait for a set interval and then poll again
-    sleepMs(pollIntervalMs);
-    return pollForDeploy(pollingState, versionId);
+    await sleepForMilliseconds(pollIntervalMs);
+    return await pollForDeploy(pollingState, versionId);
   } else if (!finishStatus.isFinished) {
     Console.info(`Polling timed out. To check the status of your app, visit
     ${versionStatusResult.payload.galaxyUrl}. To wait longer, pass a timeout
@@ -460,7 +458,7 @@ function pollForDeploy(pollingState, versionId, galaxyUrl) {
 // - waitForDeploy: whether to poll Galaxy after upload for deploy status
 // - deployPollingTimeoutMs: user overridden timeout for polling Galaxy
 //   for deploy status
-export function bundleAndDeploy(options) {
+export async function bundleAndDeploy(options) {
   if (options.recordPackageUsage === undefined) {
     options.recordPackageUsage = true;
   }
@@ -580,7 +578,7 @@ export function bundleAndDeploy(options) {
   // build / deploy succeed. We indicate that Meteor should poll for version
   // status by including a newVersionId in the payload.
   if (options.waitForDeploy && result.payload.newVersionId) {
-    return pollForDeploymentSuccess(
+    return await pollForDeploymentSuccess(
       result.payload.newVersionId,
       options.deployPollingTimeoutMs,
       result);
